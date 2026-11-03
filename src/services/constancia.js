@@ -43,7 +43,8 @@ function condicionDesdePersonaReturn(pr) {
   }
 
   const impuestos = [...lista(pr.datosRegimenGeneral && pr.datosRegimenGeneral.impuesto), ...lista(mono && mono.impuesto)];
-  const activo = (id) => impuestos.some((i) => texto(i.idImpuesto) === id && /activo/i.test(texto(i.estadoImpuesto) || 'ACTIVO'));
+  // ARCA informa el estado como "AC" (activo); se acepta tambien "ACTIVO" y sin estado
+  const activo = (id) => impuestos.some((i) => texto(i.idImpuesto) === id && /^AC/i.test(texto(i.estadoImpuesto) || 'AC'));
   if (activo(ID_IMPUESTO_IVA)) return { id: 1, descripcion: 'Responsable Inscripto' };
   if (activo(ID_IMPUESTO_IVA_EXENTO)) return { id: 3, descripcion: 'Exento' };
 

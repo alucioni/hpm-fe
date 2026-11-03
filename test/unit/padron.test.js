@@ -81,9 +81,9 @@ test('constancia: getPersona_v2 con namespace a5', () => {
 });
 
 test('constancia: condicion IVA con los ids de HPM', () => {
-  const ri = { datosGenerales: { tipoPersona: 'JURIDICA' }, datosRegimenGeneral: { impuesto: [{ idImpuesto: 10 }, { idImpuesto: 30, estadoImpuesto: 'ACTIVO' }] } };
+  const ri = { datosGenerales: { tipoPersona: 'JURIDICA' }, datosRegimenGeneral: { impuesto: [{ idImpuesto: 10 }, { idImpuesto: 30, estadoImpuesto: 'AC' }] } };
   assert.deepEqual(condicionDesdePersonaReturn(ri), { id: 1, descripcion: 'Responsable Inscripto' });
-  const ex = { datosGenerales: { tipoPersona: 'JURIDICA' }, datosRegimenGeneral: { impuesto: { idImpuesto: 32, estadoImpuesto: 'ACTIVO' } } };
+  const ex = { datosGenerales: { tipoPersona: 'JURIDICA' }, datosRegimenGeneral: { impuesto: { idImpuesto: 32, estadoImpuesto: 'AC' } } };
   assert.equal(condicionDesdePersonaReturn(ex).id, 3);
   const mono = { datosGenerales: { tipoPersona: 'FISICA' }, datosMonotributo: { categoriaMonotributo: { descripcionCategoria: 'A LOCACIONES DE SERVICIOS' } } };
   assert.equal(condicionDesdePersonaReturn(mono).id, 5);
@@ -99,4 +99,9 @@ test('aLineasHpm: condicion_iva', () => {
   const lineas = aLineasHpm(p).split('\r\n');
   assert.ok(lineas.includes('condicion_iva=5'));
   assert.ok(lineas.includes('condicion_iva_desc=Condicion IVA: Monotributo'));
+});
+
+test('constancia: impuesto IVA dado de baja no cuenta como inscripto', () => {
+  const baja = { datosGenerales: { tipoPersona: 'FISICA' }, datosRegimenGeneral: { impuesto: { idImpuesto: 30, estadoImpuesto: 'BD' } } };
+  assert.equal(condicionDesdePersonaReturn(baja).id, 4);
 });
