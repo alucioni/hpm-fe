@@ -1,6 +1,7 @@
 const { callSoap } = require('../utils/soap');
 const { parseXml } = require('../utils/xml');
 const wsaa = require('./wsaa');
+const constancia = require('./constancia');
 const config = require('../config');
 
 // Consulta de padron ARCA alcance 13 (ws_sr_padron_a13). La DLL de HPM usaba el alcance 4,
@@ -142,7 +143,13 @@ async function consultar(empresa, id) {
     : await idsPorDocumento(ticket.token, ticket.sign, empresa.cuit, String(Number(limpio)));
   for (const cuit of candidatos) {
     const persona = await getPersona(ticket.token, ticket.sign, empresa.cuit, cuit);
-    if (persona) return persona;
+    if (persona) {
+      // Condicion IVA desde la constancia A5 (el A13 no informa impuestos). Si falla, sigue sin ella.
+      const c = await constancia.condicionIva(empresa, persona.cuit);
+      persona.condicionIva = c && c.id ? { id: c.id, descripcion: c.descripcion } : null;
+      if (c && c.error) persona.condicionIvaError = c.error;
+      return persona;
+    }
   }
   return null;
 }
@@ -157,6 +164,9 @@ function aLineasHpm(p) {
     ['fechaContratoSocial', p.fechaContratoSocial], ['fechaFallecimiento', p.fechaFallecimiento],
     ['fechaNacimiento', p.fechaNacimiento], ['fechaJubilado', p.fechaJubilado],
     ['sexo', p.sexo], ['formaJuridica', p.formaJuridica],
+    // id de Empresas_Posicion_IVA de HPM (1 RI, 3 Exento, 4 Cons. Final, 5 Monotributo)
+    ['condicion_iva', p.condicionIva && p.condicionIva.id],
+    ['condicion_iva_desc', p.condicionIva ? `Condicion IVA: ${p.condicionIva.descripcion}` : ''],
   ];
   p.domicilios.slice(0, 10).forEach((d, i) => {
     l.push([`direccion${i + 1}`, d.direccion], [`domicilio_localidad${i + 1}`, d.localidad], [`domicilio_tipo${i + 1}`, d.tipo]);

@@ -71,3 +71,32 @@ test('aLineasHpm: claves de datos_padron y listas desde 1', () => {
   const sa = aLineasHpm({ ...base, razonSocial: 'ACME SA' }).split('\r\n');
   assert.ok(sa.includes('RazonSocial=ACME SA'));
 });
+
+const { condicionDesdePersonaReturn, buildGetPersonaV2Soap } = require('../../src/services/constancia');
+
+test('constancia: getPersona_v2 con namespace a5', () => {
+  const xml = buildGetPersonaV2Soap('T', 'S', '20219547006', '33693450239');
+  assert.match(xml, /xmlns:a5="http:\/\/a5\.soap\.ws\.server\.puc\.sr\/"/);
+  assert.match(xml, /<a5:getPersona_v2>/);
+});
+
+test('constancia: condicion IVA con los ids de HPM', () => {
+  const ri = { datosGenerales: { tipoPersona: 'JURIDICA' }, datosRegimenGeneral: { impuesto: [{ idImpuesto: 10 }, { idImpuesto: 30, estadoImpuesto: 'ACTIVO' }] } };
+  assert.deepEqual(condicionDesdePersonaReturn(ri), { id: 1, descripcion: 'Responsable Inscripto' });
+  const ex = { datosGenerales: { tipoPersona: 'JURIDICA' }, datosRegimenGeneral: { impuesto: { idImpuesto: 32, estadoImpuesto: 'ACTIVO' } } };
+  assert.equal(condicionDesdePersonaReturn(ex).id, 3);
+  const mono = { datosGenerales: { tipoPersona: 'FISICA' }, datosMonotributo: { categoriaMonotributo: { descripcionCategoria: 'A LOCACIONES DE SERVICIOS' } } };
+  assert.equal(condicionDesdePersonaReturn(mono).id, 5);
+  assert.equal(condicionDesdePersonaReturn({ datosGenerales: { tipoPersona: 'FISICA' } }).id, 4);
+  assert.equal(condicionDesdePersonaReturn({ datosGenerales: { tipoPersona: 'JURIDICA' } }), null);
+});
+
+test('aLineasHpm: condicion_iva', () => {
+  const p = {
+    nombre: 'A', apellido: 'B', cuit: '1', razonSocial: '', domicilios: [], telefonos: [], emails: [], categorias: [],
+    condicionIva: { id: 5, descripcion: 'Monotributo' },
+  };
+  const lineas = aLineasHpm(p).split('\r\n');
+  assert.ok(lineas.includes('condicion_iva=5'));
+  assert.ok(lineas.includes('condicion_iva_desc=Condicion IVA: Monotributo'));
+});

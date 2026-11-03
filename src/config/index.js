@@ -14,6 +14,8 @@ module.exports = {
     url: process.env.AFIP_URL,
     wsaaUrl: process.env.WSAA_URL,
     padronUrl: process.env.PADRON_URL || 'https://aws.afip.gov.ar/sr-padron/webservices/personaServiceA13',
+    // Constancia de inscripcion (A5): solo para la condicion IVA (ws_sr_constancia_inscripcion)
+    constanciaUrl: process.env.CONSTANCIA_URL || 'https://aws.afip.gov.ar/sr-padron/webservices/personaServiceA5',
   },
   // Empresa (cargada en /admin con su .p12) cuyo certificado se usa para TODAS las consultas
   // de padron: ARCA deja consultar cualquier CUIT con un solo certificado autorizado para
