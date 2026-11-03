@@ -24,7 +24,7 @@ async function clear(empresaId) {
   await pool.execute('DELETE FROM token_cache WHERE empresa_id = ?', [empresaId]);
 }
 
-// Tokens de otros servicios WSAA (ws_sr_padron_a4...): tabla aparte, ver migracion 003.
+// Tokens de otros servicios WSAA (ws_sr_padron_a13...): tabla aparte, ver migracion 003.
 async function getServicio(empresaId, servicio) {
   const [rows] = await pool.execute(
     `SELECT token, sign, expires_at FROM token_cache_servicio

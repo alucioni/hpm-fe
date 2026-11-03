@@ -13,11 +13,11 @@ module.exports = {
   afip: {
     url: process.env.AFIP_URL,
     wsaaUrl: process.env.WSAA_URL,
-    padronA4Url: process.env.PADRON_A4_URL || 'https://aws.afip.gov.ar/sr-padron/webservices/personaServiceA4',
+    padronUrl: process.env.PADRON_URL || 'https://aws.afip.gov.ar/sr-padron/webservices/personaServiceA13',
   },
   // Empresa (cargada en /admin con su .p12) cuyo certificado se usa para TODAS las consultas
   // de padron: ARCA deja consultar cualquier CUIT con un solo certificado autorizado para
-  // ws_sr_padron_a4. Asi las PC de HPM no necesitan certificado propio.
+  // ws_sr_padron_a13. Asi las PC de HPM no necesitan certificado propio.
   padronCuit: process.env.PADRON_CUIT || '20219547006',
   p12EncryptionKey: process.env.P12_ENCRYPTION_KEY,
   adminSecret: process.env.ADMIN_SECRET,

@@ -40,7 +40,7 @@ async function obtenerLoginTicketResponse(empresa) {
   return { token, sign };
 }
 
-// Igual que obtenerLoginTicketResponse pero para otro servicio WSAA (ej. ws_sr_padron_a4),
+// Igual que obtenerLoginTicketResponse pero para otro servicio WSAA (ej. ws_sr_padron_a13),
 // con su propio cache para no pisar el token de wsfe.
 async function obtenerLoginTicketServicio(empresa, servicio) {
   const cached = await tokenCache.getServicio(empresa.id, servicio);
