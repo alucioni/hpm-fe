@@ -59,7 +59,8 @@ function ordenDomicilio(d) {
 function normalizarPersona(p) {
   const domicilios = lista(p.domicilio).map((d) => ({
     direccion: texto(d.direccion),
-    localidad: texto(d.localidad),
+    // En CABA ARCA no manda localidad: se usa la provincia ("CIUDAD AUTONOMA BUENOS AIRES")
+    localidad: texto(d.localidad) || texto(d.descripcionProvincia),
     codPostal: texto(d.codigoPostal),
     provincia: texto(d.descripcionProvincia),
     tipo: texto(d.tipoDomicilio),
