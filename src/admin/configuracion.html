@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>hpm-fe · Configuración HPM</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --border: #e2e5ea; --text: #1c2128; --muted: #6b7280;
+    --accent: #2563eb; --ok: #16a34a; --danger: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+  header { background: #111827; color: #fff; padding: 14px 20px; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  main { max-width: 980px; margin: 0 auto; padding: 20px 16px 60px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px; margin-bottom: 18px; }
+  .card h2 { margin: 0 0 6px; font-size: 15px; }
+  .muted { color: var(--muted); }
+  .tabla-wrap { overflow-x: auto; margin-top: 12px; }
+  table { border-collapse: collapse; font: 13px Consolas, 'Courier New', monospace; }
+  td { border: 1px solid #c8ccd2; padding: 4px 8px; white-space: nowrap; cursor: copy; user-select: all; }
+  td:hover { background: #eff6ff; }
+  td.copiado { background: #dcfce7; }
+  td.clave { font-weight: 600; }
+  button.primary { margin-top: 14px; background: var(--accent); color: #fff; border: none; padding: 9px 16px; border-radius: 6px; font-size: 14px; cursor: pointer; }
+  #aviso { margin-left: 10px; color: var(--ok); font-size: 13px; }
+  #error { color: var(--danger); display: none; margin-top: 10px; }
+  ul.descargas { margin: 10px 0 0; padding-left: 20px; }
+  ul.descargas li { margin: 4px 0; }
+  ul.descargas a { color: var(--accent); font: 13px Consolas, 'Courier New', monospace; }
+</style>
+</head>
+<body>
+
+<header><h1>hpm-fe · Configuración HPM</h1></header>
+<main>
+  <div class="card">
+    <h2>Valores para la configuración de HPM</h2>
+    <p class="muted" style="margin:0">Clic en una celda para copiarla. «Copiar tabla» copia las dos filas para pegarlas en una planilla.</p>
+    <div class="tabla-wrap"><table><tbody id="filas"></tbody></table></div>
+    <div id="error">No se pudieron cargar los valores. Recargá la página.</div>
+    <button class="primary" onclick="copiarTabla()">Copiar tabla</button><span id="aviso"></span>
+  </div>
+  <div class="card">
+    <h2>Descargas</h2>
+    <ul class="descargas">
+      <li><a href="https://www.hipericum.com.ar/hpm/HPM.exe" download>HPM.exe</a></li>
+      <li><a href="https://www.hipericum.com.ar/hpm/curl.exe" download>curl.exe</a></li>
+      <li><a href="https://www.hipericum.com.ar/hpm/curl-ca-bundle.crt" download>curl-ca-bundle.crt</a></li>
+    </ul>
+  </div>
+</main>
+
+<script>
+let filas = [];
+
+async function copiar(texto) {
+  try {
+    await navigator.clipboard.writeText(texto);
+  } catch {
+    // Fallback para navegadores sin Clipboard API (o http)
+    const ta = document.createElement('textarea');
+    ta.value = texto;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+  }
+}
+
+function avisar(texto) {
+  const el = document.getElementById('aviso');
+  el.textContent = texto;
+  clearTimeout(avisar.t);
+  avisar.t = setTimeout(() => { el.textContent = ''; }, 1500);
+}
+
+function render() {
+  const tbody = document.getElementById('filas');
+  tbody.innerHTML = '';
+  for (const f of filas) {
+    const tr = document.createElement('tr');
+    for (const [texto, clase] of [[f.clave, 'clave'], [f.valor, '']]) {
+      const td = document.createElement('td');
+      td.textContent = texto;
+      if (clase) td.className = clase;
+      td.onclick = async () => {
+        await copiar(texto);
+        td.classList.add('copiado');
+        setTimeout(() => td.classList.remove('copiado'), 800);
+        avisar('Copiado: ' + (clase ? texto : f.clave));
+      };
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+}
+
+async function copiarTabla() {
+  // Tabulado + salto de línea: al pegar en Excel queda una celda por valor.
+  await copiar(filas.map(f => f.clave + '\t' + f.valor).join('\r\n'));
+  avisar('Tabla copiada');
+}
+
+async function boot() {
+  try {
+    const res = await fetch('/configuracion.json');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    filas = (await res.json()).configuracion;
+    render();
+  } catch {
+    document.getElementById('error').style.display = 'block';
+  }
+}
+
+boot();
+</script>
+</body>
+</html>
