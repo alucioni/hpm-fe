@@ -83,7 +83,9 @@
 powershell -NoProfile -ExecutionPolicy Bypass -File .\instalar.ps1</code></pre>
         El instalador:
         <ul class="pasos">
-          <li>verifica la versión de Node e instala las dependencias si falta <code>node_modules\</code>;</li>
+          <li>verifica la versión de Node y prueba que carguen las dependencias: si falta <code>node_modules\</code>
+            o está incompleto (por ejemplo «Cannot find module» por una descompresión cortada), lo borra y corre
+            <code>npm install</code>, que necesita internet;</li>
           <li>crea las carpetas <code>uploads\</code> y <code>baileys_auth\</code>;</li>
           <li>abre el puerto TCP 3000 en el firewall (regla «Node HPM WSApp Puerto 3000»);</li>
           <li>genera <code>arrancar.cmd</code> y <code>start_hidden.vbs</code> con la ruta de Node de esa PC;</li>
