@@ -30,6 +30,16 @@
   ul.descargas { margin: 10px 0 0; padding-left: 20px; }
   ul.descargas li { margin: 4px 0; }
   ul.descargas a { color: var(--accent); font: 13px Consolas, 'Courier New', monospace; }
+  .card h3 { margin: 18px 0 6px; font-size: 14px; }
+  .card ol, .card ul.pasos { margin: 6px 0; padding-left: 22px; }
+  .card li { margin: 3px 0; }
+  pre { background: #f3f4f6; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; overflow-x: auto; font: 13px Consolas, 'Courier New', monospace; margin: 6px 0; }
+  code { font: 13px Consolas, 'Courier New', monospace; background: #f3f4f6; padding: 0 3px; border-radius: 3px; }
+  pre code { background: none; padding: 0; }
+  table.mant { font: inherit; margin-top: 6px; }
+  table.mant td, table.mant th { white-space: normal; cursor: auto; user-select: auto; padding: 5px 8px; border: 1px solid #c8ccd2; text-align: left; vertical-align: top; }
+  table.mant td:hover { background: none; }
+  .nota { background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 8px 10px; margin: 8px 0; }
 </style>
 </head>
 <body>
@@ -49,7 +59,80 @@
       <li><a href="https://www.hipericum.com.ar/hpm/HPM.exe" download>HPM.exe</a></li>
       <li><a href="https://www.hipericum.com.ar/hpm/curl.exe" download>curl.exe</a></li>
       <li><a href="https://www.hipericum.com.ar/hpm/curl-ca-bundle.crt" download>curl-ca-bundle.crt</a></li>
+      <li><a href="/descargas/whatsapp.zip" download>whatsapp.zip</a> <span class="muted">(servicio WhatsApp de HPM, ver abajo)</span></li>
     </ul>
+  </div>
+
+  <div class="card" id="whatsapp">
+    <h2>Instalación del servicio WhatsApp de HPM en un cliente nuevo</h2>
+    <p class="muted" style="margin:0">Se instala <b>una sola vez por oficina</b>, en la PC que hace de servidor (la sesión de
+      WhatsApp es de un solo proceso). Las demás PC con HPM solo apuntan a ese servidor desde su <code>HPM.ini</code>.</p>
+
+    <h3>1. PC servidor de la oficina</h3>
+    <ol>
+      <li><b>Node.js 20 o superior</b> desde <a href="https://nodejs.org" target="_blank" rel="noopener">nodejs.org</a>.
+        En Windows Server 2012 R2 tiene que ser <b>Node 20</b>: Node 22 o superior no corre ahí.</li>
+      <li><b>Copiar el servicio:</b> descargar <a href="/descargas/whatsapp.zip" download>whatsapp.zip</a> y descomprimirlo en
+        <code>C:\programa\node\hpm_wsapp</code>. Ya trae <code>node_modules</code>, así que no hace falta internet para instalar.
+        También se puede clonar el repo:
+        <pre><code>git clone https://github.com/alucioni/whatsapp.git C:\programa\node\hpm_wsapp</code></pre>
+        Si se copia la carpeta desde otra PC, <b>no copiar</b> <code>baileys_auth\</code> (es la sesión de WhatsApp de esa PC)
+        ni los <code>srv_*.log</code>.</li>
+      <li><b>Ejecutar el instalador</b> en PowerShell <b>como Administrador</b>:
+        <pre><code>cd C:\programa\node\hpm_wsapp
+powershell -NoProfile -ExecutionPolicy Bypass -File .\instalar.ps1</code></pre>
+        El instalador:
+        <ul class="pasos">
+          <li>verifica la versión de Node e instala las dependencias si falta <code>node_modules\</code>;</li>
+          <li>crea las carpetas <code>uploads\</code> y <code>baileys_auth\</code>;</li>
+          <li>abre el puerto TCP 3000 en el firewall (regla «Node HPM WSApp Puerto 3000»);</li>
+          <li>genera <code>arrancar.cmd</code> y <code>start_hidden.vbs</code> con la ruta de Node de esa PC;</li>
+          <li>crea las tareas programadas «HPM WhatsApp» y «HPM WhatsApp Watchdog», que arrancan con Windows;</li>
+          <li>levanta el servicio y muestra la IP de la PC y la configuración para <code>HPM.ini</code>.</li>
+        </ul>
+        Con <code>-Simular</code> hace todo menos firewall, tareas programadas y arranque.</li>
+      <li><b>Vincular el WhatsApp del cliente:</b> abrir <code>http://localhost:3000/wa</code> en el servidor
+        (o <code>http://&lt;ip-del-servidor&gt;:3000/wa</code> desde otra PC) y, en el teléfono,
+        <b>WhatsApp &gt; Dispositivos vinculados &gt; Vincular dispositivo</b>. El dispositivo aparece como <b>HPM WhatsApp</b>.
+        Si no se vincula ahora, HPM muestra el QR la primera vez que alguien intente mandar algo.</li>
+    </ol>
+
+    <h3>2. Cada PC con HPM</h3>
+    <ol>
+      <li><b>HPM.ini</b> (carpeta del programa), con la IP que mostró el instalador:
+        <pre><code>[WHATSAPP]
+WHATSAPP_SERVICE=http://&lt;ip-del-servidor&gt;:3000
+WHATSAPP_SERVICE_CMD=</code></pre>
+        <ul class="pasos">
+          <li>En la PC servidor puede quedar <code>http://localhost:3000</code>.</li>
+          <li><code>WHATSAPP_SERVICE_CMD</code> es lo que HPM ejecuta para relanzar el servicio si no responde: vacío en las
+            estaciones; en la PC servidor se puede poner <code>C:\programa\node\hpm_wsapp\start_hidden.vbs</code>.</li>
+          <li>Si está vacío y el servicio está caído, HPM no ofrece la opción WhatsApp.</li>
+        </ul></li>
+      <li><b>Bullzip PDF Printer</b> en cada PC que vaya a mandar PDF. Sin Bullzip no aparece la opción WhatsApp, ni en
+        comprobantes ni en listados.</li>
+      <li><b>Formato de factura</b>: en el ini del formato (por ejemplo <code>factura.ini</code>), en la sección de la factura,
+        <code>nombre_ColaComandera=WhatsApp</code>, o <code>nombre_ColaComandera=Preguntar</code> para elegir en cada impresión
+        entre WhatsApp, Bullzip_PDF, Bullzip_PDF_abierto o una impresora.</li>
+    </ol>
+
+    <h3>3. Verificación</h3>
+    <ol>
+      <li><code>http://&lt;ip-del-servidor&gt;:3000/status</code> tiene que devolver <code>{"ready":true}</code>.</li>
+      <li>Desde HPM: imprimir una factura con «Preguntar», elegir <b>WhatsApp</b> y mandarla a un número propio.</li>
+      <li>Desde un listado: Imprimir, elegir <b>WhatsApp</b> en la lista de impresoras y mandarlo.</li>
+    </ol>
+
+    <h3>4. Mantenimiento</h3>
+    <div class="tabla-wrap"><table class="mant">
+      <tr><th>Situación</th><th>Qué hacer</th></tr>
+      <tr><td>El servicio no responde</td><td>En el servidor, doble clic en <code>reiniciar.cmd</code>.</td></tr>
+      <tr><td>Ver errores</td><td><code>srv_err.log</code> y <code>srv_out.log</code> en la carpeta del servicio.</td></tr>
+      <tr><td>Se cerró la sesión desde el teléfono</td><td>El servicio borra la sesión y vuelve a pedir el QR solo: abrir
+        <code>/wa</code> o mandar algo desde HPM y escanear.</td></tr>
+      <tr><td>Cambiar de teléfono</td><td>Desvincular «HPM WhatsApp» en el teléfono viejo y escanear el QR con el nuevo.</td></tr>
+      <tr><td>Los logs crecen mucho</td><td>No se rotan solos: borrarlos de vez en cuando con el servicio detenido.</td></tr>
+    </table></div>
   </div>
 </main>
 

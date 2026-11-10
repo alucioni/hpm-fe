@@ -27,6 +27,10 @@ app.get('/configuracion.json', (req, res) => {
   });
 });
 
+// Archivos para instalar en los clientes (ej. whatsapp.zip del servicio WhatsApp de HPM).
+// La carpeta descargas/ no está en git: los archivos se suben directo al servidor.
+app.use('/descargas', express.static(path.join(__dirname, '..', 'descargas'), { index: false }));
+
 const auth = require('./middleware/auth');
 const adminAuth = require('./middleware/adminAuth');
 const resolveEmpresa = require('./middleware/resolveEmpresa');
