@@ -64,9 +64,10 @@
   </div>
 
   <div class="card" id="whatsapp">
-    <h2>Instalación del servicio WhatsApp de HPM en un cliente nuevo</h2>
+    <h2>Servicio WhatsApp de HPM: instalación en un cliente</h2>
     <p class="muted" style="margin:0">Se instala <b>una sola vez por oficina</b>, en la PC que hace de servidor (la sesión de
-      WhatsApp es de un solo proceso). Las demás PC con HPM solo apuntan a ese servidor desde su <code>HPM.ini</code>.</p>
+      WhatsApp es de un solo proceso). Conviene que sea <b>la PC del SQL Server</b>: así las demás PC con HPM lo encuentran
+      solas, sin tocar su <code>HPM.ini</code>.</p>
 
     <h3>1. PC servidor de la oficina</h3>
     <ol>
@@ -76,8 +77,8 @@
         <code>C:\programa\node\hpm_wsapp</code>. Ya trae <code>node_modules</code>, así que no hace falta internet para instalar.
         También se puede clonar el repo:
         <pre><code>git clone https://github.com/alucioni/whatsapp.git C:\programa\node\hpm_wsapp</code></pre>
-        Si se copia la carpeta desde otra PC, <b>no copiar</b> <code>baileys_auth\</code> (es la sesión de WhatsApp de esa PC)
-        ni los <code>srv_*.log</code>.</li>
+        Si se copia la carpeta desde otra PC, <b>no copiar</b> <code>baileys_auth\</code> (es la sesión de WhatsApp de esa PC),
+        <code>config.json</code> ni los <code>srv_*.log</code>.</li>
       <li><b>Ejecutar el instalador</b> en PowerShell <b>como Administrador</b>:
         <pre><code>cd C:\programa\node\hpm_wsapp
 powershell -NoProfile -ExecutionPolicy Bypass -File .\instalar.ps1</code></pre>
@@ -89,50 +90,103 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\instalar.ps1</code></pre>
           <li>crea las carpetas <code>uploads\</code> y <code>baileys_auth\</code>;</li>
           <li>abre el puerto TCP 3000 en el firewall (regla «Node HPM WSApp Puerto 3000»);</li>
           <li>genera <code>arrancar.cmd</code> y <code>start_hidden.vbs</code> con la ruta de Node de esa PC;</li>
-          <li>crea las tareas programadas «HPM WhatsApp» y «HPM WhatsApp Watchdog», que arrancan con Windows;</li>
-          <li>levanta el servicio y muestra la IP de la PC y la configuración para <code>HPM.ini</code>.</li>
+          <li>crea las tareas programadas «HPM WhatsApp» y «HPM WhatsApp Watchdog», que arrancan con Windows
+            <b>ocultas</b> (sin ventana de cmd);</li>
+          <li>levanta el servicio y muestra la IP de la PC.</li>
         </ul>
         Con <code>-Simular</code> hace todo menos firewall, tareas programadas y arranque.</li>
-      <li><b>Vincular el WhatsApp del cliente:</b> abrir <code>http://localhost:3000/wa</code> en el servidor
-        (o <code>http://&lt;ip-del-servidor&gt;:3000/wa</code> desde otra PC) y, en el teléfono,
-        <b>WhatsApp &gt; Dispositivos vinculados &gt; Vincular dispositivo</b>. El dispositivo aparece como <b>HPM WhatsApp</b>.
-        Si no se vincula ahora, HPM muestra el QR la primera vez que alguien intente mandar algo.</li>
+      <li><b>Registro de mensajes en SQL:</b> copiar <code>config.ejemplo.json</code> como <code>config.json</code> y completar
+        el servidor, la base y la clave real del SQL:
+        <pre><code>{
+  "sql": {
+    "server": "localhost",
+    "instanceName": "",
+    "port": 1433,
+    "database": "hpm",
+    "user": "sa",
+    "password": "CLAVE_DEL_SQL"
+  }
+}</code></pre>
+        <ul class="pasos">
+          <li>El servicio crea sola la tabla <code>aaaWhtsAPP</code> y guarda ahí cada mensaje enviado y recibido
+            (fecha, número propio, número del otro, enviado/recibido, texto y nombre del adjunto).</li>
+          <li>La clave del <code>HPM.ini</code> no sirve: HPM le agrega una parte encriptada. Usar la clave real.</li>
+          <li>Sin <code>config.json</code> el servicio funciona igual, pero no guarda los mensajes.</li>
+          <li>Después de crearlo o cambiarlo, reiniciar el servicio (<code>reiniciar.cmd</code> como Administrador).</li>
+        </ul></li>
+      <li><b>Vincular el WhatsApp del cliente:</b> desde HPM, en el panel lateral, pestaña <b>WhatsApp</b> &gt;
+        <b>Ver QR</b>; en el teléfono, <b>WhatsApp &gt; Dispositivos vinculados &gt; Vincular dispositivo</b>. El QR se
+        muestra en una ventana de HPM, no en una consola. El dispositivo aparece como <b>HPM WhatsApp</b>.
+        También se puede escanear desde <code>http://localhost:3000/wa</code>. Si no se vincula ahora, HPM muestra el QR
+        la primera vez que alguien intente mandar algo.</li>
     </ol>
 
     <h3>2. Cada PC con HPM</h3>
     <ol>
-      <li><b>HPM.ini</b> (carpeta del programa), con la IP que mostró el instalador:
+      <li><b>HPM.ini: no hace falta nada</b> si el servicio está en la PC del SQL Server. Sin la sección
+        <code>[WHATSAPP]</code>, HPM se comporta como si dijera:
+        <pre><code>[WHATSAPP]
+WHATSAPP_SERVICE=http://&lt;servidor-del-SQL&gt;:3000
+WHATSAPP_SERVICE_CMD=</code></pre>
+        (toma el servidor de la conexión a la base). Solo si el servicio está en <b>otra</b> PC, poner su IP:
         <pre><code>[WHATSAPP]
 WHATSAPP_SERVICE=http://&lt;ip-del-servidor&gt;:3000
 WHATSAPP_SERVICE_CMD=</code></pre>
         <ul class="pasos">
-          <li>En la PC servidor puede quedar <code>http://localhost:3000</code>.</li>
-          <li><code>WHATSAPP_SERVICE_CMD</code> es lo que HPM ejecuta para relanzar el servicio si no responde: vacío en las
-            estaciones; en la PC servidor se puede poner <code>C:\programa\node\hpm_wsapp\start_hidden.vbs</code>.</li>
-          <li>Si está vacío y el servicio está caído, HPM no ofrece la opción WhatsApp.</li>
+          <li><code>WHATSAPP_SERVICE_CMD</code>: vacío en las estaciones. En la PC del servicio se puede poner
+            <code>C:\programa\node\hpm_wsapp\start_hidden.vbs</code> para que HPM lo levante (oculto) si no responde.</li>
+          <li>La URL también se puede cargar una sola vez en la tabla <code>AAAAConfiguracion</code>
+            (<code>WHATSAPP_SERVICE</code>). Orden: <code>HPM.ini</code> → tabla → servidor del SQL.</li>
         </ul></li>
       <li><b>Bullzip PDF Printer</b> en cada PC que vaya a mandar PDF. Sin Bullzip no aparece la opción WhatsApp, ni en
         comprobantes ni en listados.</li>
       <li><b>Formato de factura</b>: en el ini del formato (por ejemplo <code>factura.ini</code>), en la sección de la factura,
         <code>nombre_ColaComandera=WhatsApp</code>, o <code>nombre_ColaComandera=Preguntar</code> para elegir en cada impresión
         entre WhatsApp, Bullzip_PDF, Bullzip_PDF_abierto o una impresora.</li>
+      <li><b>Carpeta de los PDF: automática.</b> Si no hay otra configurada (<code>PDF_CARPETA</code> en
+        <code>AAAAConfiguracion</code>), los PDF van a la carpeta <code>pdf</code> dentro de la carpeta de HPM. HPM la crea
+        si no existe y deja en el escritorio el acceso directo <b>PDF HPM</b>. Los nombres de archivo salen sin acentos ni
+        símbolos (por ejemplo <code>FACT-CLIC0002-00000548_Consumidor FINAL_02-10-2026.pdf</code>).</li>
     </ol>
 
     <h3>3. Verificación</h3>
     <ol>
       <li><code>http://&lt;ip-del-servidor&gt;:3000/status</code> tiene que devolver <code>{"ready":true}</code>.</li>
-      <li>Desde HPM: imprimir una factura con «Preguntar», elegir <b>WhatsApp</b> y mandarla a un número propio.</li>
+      <li>En HPM, panel lateral, pestaña <b>WhatsApp</b>: tiene que decir <b>Servicio: vinculado</b>.</li>
+      <li>Imprimir una factura con «Preguntar», elegir <b>WhatsApp</b> y mandarla a un número propio. El PDF tiene que
+        aparecer en la carpeta <b>PDF HPM</b> del escritorio y el envío en la vista <b>Mensajes</b> de la pestaña.</li>
       <li>Desde un listado: Imprimir, elegir <b>WhatsApp</b> en la lista de impresoras y mandarlo.</li>
     </ol>
 
-    <h3>4. Mantenimiento</h3>
+    <h3>4. Pestaña WhatsApp del panel de HPM</h3>
+    <div class="tabla-wrap"><table class="mant">
+      <tr><th>Elemento</th><th>Qué muestra</th></tr>
+      <tr><td>Estado</td><td><b>vinculado</b>, <b>sin vincular</b> (botón <b>Ver QR</b>) o <b>no responde</b> (botón
+        <b>Iniciar</b>, solo en la PC que tiene <code>WHATSAPP_SERVICE_CMD</code>).</td></tr>
+      <tr><td>Mensajes</td><td>Últimos 200 mensajes de la tabla <code>aaaWhtsAPP</code>: <code>&gt;</code> enviado,
+        <code>&lt;</code> recibido. Se ven aunque el servicio esté caído.</td></tr>
+      <tr><td>Log servicio</td><td>Últimas líneas del log del servicio (conexión, QR, envíos, errores de SQL).</td></tr>
+    </table></div>
+    <p class="muted">La pestaña aparece si hay URL configurada o si el servicio responde en el servidor del SQL.</p>
+
+    <h3>5. Mantenimiento</h3>
     <div class="tabla-wrap"><table class="mant">
       <tr><th>Situación</th><th>Qué hacer</th></tr>
-      <tr><td>El servicio no responde</td><td>En el servidor, doble clic en <code>reiniciar.cmd</code>.</td></tr>
-      <tr><td>Ver errores</td><td><code>srv_err.log</code> y <code>srv_out.log</code> en la carpeta del servicio.</td></tr>
-      <tr><td>Se cerró la sesión desde el teléfono</td><td>El servicio borra la sesión y vuelve a pedir el QR solo: abrir
-        <code>/wa</code> o mandar algo desde HPM y escanear.</td></tr>
+      <tr><td>El servicio no responde</td><td>En el servidor, <code>reiniciar.cmd</code> <b>como Administrador</b> (el servicio
+        corre como SYSTEM).</td></tr>
+      <tr><td>Ver errores</td><td>Pestaña WhatsApp &gt; <b>Log servicio</b>, o <code>srv_err.log</code> y
+        <code>srv_out.log</code> en la carpeta del servicio.</td></tr>
+      <tr><td>La vista Mensajes queda vacía</td><td>Falta <code>config.json</code> o la clave del SQL está mal: revisar
+        <b>Log servicio</b> («SQL: no se pudo conectar»).</td></tr>
+      <tr><td>Se abre una ventana de cmd con el QR</td><td>HPM o el servicio son de una versión vieja: actualizar los dos.</td></tr>
+      <tr><td>Se cerró la sesión desde el teléfono</td><td>El servicio borra la sesión y pide un QR nuevo: pestaña WhatsApp
+        &gt; <b>Ver QR</b> y escanear.</td></tr>
       <tr><td>Cambiar de teléfono</td><td>Desvincular «HPM WhatsApp» en el teléfono viejo y escanear el QR con el nuevo.</td></tr>
+      <tr><td>Actualizar el servicio</td><td>Descomprimir el <a href="/descargas/whatsapp.zip" download>whatsapp.zip</a> nuevo
+        encima: trae <code>node_modules</code>, así que <b>no hace falta <code>npm install</code></b>, y no pisa
+        <code>baileys_auth\</code> ni <code>config.json</code>. Después volver a correr <code>instalar.ps1</code> como
+        Administrador (o <code>reiniciar.cmd</code>). Con <code>git pull</code> en vez del zip sí hace falta
+        <code>npm install</code>.</td></tr>
       <tr><td>Los logs crecen mucho</td><td>No se rotan solos: borrarlos de vez en cuando con el servicio detenido.</td></tr>
     </table></div>
   </div>
