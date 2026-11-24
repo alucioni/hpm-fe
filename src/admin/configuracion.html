@@ -95,24 +95,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\instalar.ps1</code></pre>
           <li>levanta el servicio y muestra la IP de la PC.</li>
         </ul>
         Con <code>-Simular</code> hace todo menos firewall, tareas programadas y arranque.</li>
-      <li><b>Registro de mensajes en SQL:</b> copiar <code>config.ejemplo.json</code> como <code>config.json</code> y completar
-        el servidor, la base y la clave real del SQL:
-        <pre><code>{
-  "sql": {
-    "server": "localhost",
-    "instanceName": "",
-    "port": 1433,
-    "database": "hpm",
-    "user": "sa",
-    "password": "CLAVE_DEL_SQL"
-  }
-}</code></pre>
+      <li><b>Registro de mensajes en SQL: automático, no hay que configurar nada.</b> La primera vez que HPM consulta el
+        servicio y ve que no tiene conexión a la base, le manda la de su propia conexión (servidor, puerto real del SQL,
+        base, usuario y clave). Si conecta, el servicio la guarda, crea la tabla <code>aaaWhtsAPP</code> y registra cada
+        mensaje enviado y recibido (fecha, número propio, número del otro, enviado/recibido, texto y nombre del adjunto).
         <ul class="pasos">
-          <li>El servicio crea sola la tabla <code>aaaWhtsAPP</code> y guarda ahí cada mensaje enviado y recibido
-            (fecha, número propio, número del otro, enviado/recibido, texto y nombre del adjunto).</li>
-          <li>La clave del <code>HPM.ini</code> no sirve: HPM le agrega una parte encriptada. Usar la clave real.</li>
-          <li>Sin <code>config.json</code> el servicio funciona igual, pero no guarda los mensajes.</li>
-          <li>Después de crearlo o cambiarlo, reiniciar el servicio (<code>reiniciar.cmd</code> como Administrador).</li>
+          <li>Si la conexión falla (al recibirla, al arrancar o más tarde), el servicio <b>borra la configuración</b> y lo
+            anota en su log; la próxima vez que se abra HPM la vuelve a mandar.</li>
+          <li>Una vez que hay una conexión funcionando, no acepta que otra PC la cambie.</li>
+          <li>Usa el puerto real que informa el SQL: no depende del SQL Browser ni del nombre de la instancia.</li>
+          <li>La clave viaja por la red local sin cifrar y queda en <code>config.json</code> en el servidor: no exponer el
+            puerto 3000 a internet.</li>
         </ul></li>
       <li><b>Vincular el WhatsApp del cliente:</b> desde HPM, en el panel lateral, pestaña <b>WhatsApp</b> &gt;
         <b>Ver QR</b>; en el teléfono, <b>WhatsApp &gt; Dispositivos vinculados &gt; Vincular dispositivo</b>. El QR se
@@ -176,8 +169,8 @@ WHATSAPP_SERVICE_CMD=</code></pre>
         corre como SYSTEM).</td></tr>
       <tr><td>Ver errores</td><td>Pestaña WhatsApp &gt; <b>Log servicio</b>, o <code>srv_err.log</code> y
         <code>srv_out.log</code> en la carpeta del servicio.</td></tr>
-      <tr><td>La vista Mensajes queda vacía</td><td>Falta <code>config.json</code> o la clave del SQL está mal: revisar
-        <b>Log servicio</b> («SQL: no se pudo conectar»).</td></tr>
+      <tr><td>La vista Mensajes queda vacía</td><td>El servicio no pudo conectarse a la base: revisar <b>Log servicio</b>
+        («SQL: ...»). Se vuelve a intentar sola la próxima vez que se abre HPM.</td></tr>
       <tr><td>Se abre una ventana de cmd con el QR</td><td>HPM o el servicio son de una versión vieja: actualizar los dos.</td></tr>
       <tr><td>Se cerró la sesión desde el teléfono</td><td>El servicio borra la sesión y pide un QR nuevo: pestaña WhatsApp
         &gt; <b>Ver QR</b> y escanear.</td></tr>
