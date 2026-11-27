@@ -56,12 +56,15 @@ test('aLineasHpm: claves de datos_padron y listas desde 1', () => {
     nombre: 'JUAN', apellido: 'PEREZ', cuit: '20219547006', razonSocial: '',
     tipoDocumento: 'DNI', fechaInscripcion: '', fechaContratoSocial: '', fechaFallecimiento: '',
     fechaNacimiento: '1970-05-01', fechaJubilado: '', sexo: '', formaJuridica: '',
-    domicilios: [{ direccion: 'MITRE 123', localidad: 'EL BOLSON', tipo: 'FISCAL' }],
+    numeroDocumento: '21954700',
+    domicilios: [{ direccion: 'MITRE 123', localidad: 'EL BOLSON', codPostal: '8430', tipo: 'FISCAL' }],
     telefonos: [],
     emails: [],
     categorias: [{ descripcion: 'ACTIVIDAD PRINCIPAL: X', idImpuesto: '620100', estado: 'ACTIVO', periodo: '201311' }],
   };
   const lineas = aLineasHpm(base).split('\r\n');
+  assert.ok(lineas.includes('numeroDocumento=21954700'));
+  assert.ok(lineas.includes('domicilio_cp1=8430'));
   assert.ok(lineas.includes('apellido=PEREZ'));
   assert.ok(lineas.includes('direccion1=MITRE 123'));
   assert.ok(lineas.includes('domicilio_localidad1=EL BOLSON'));

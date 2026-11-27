@@ -160,7 +160,8 @@ function aLineasHpm(p) {
   const limpiar = (v) => String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').trim();
   const l = [
     ['nombre', p.nombre], ['apellido', p.apellido], ['cuit', p.cuit], ['RazonSocial', p.razonSocial],
-    ['tipoDocumento', p.tipoDocumento], ['fechaInscripcion', p.fechaInscripcion],
+    ['tipoDocumento', p.tipoDocumento], ['numeroDocumento', p.numeroDocumento],
+    ['fechaInscripcion', p.fechaInscripcion],
     ['fechaContratoSocial', p.fechaContratoSocial], ['fechaFallecimiento', p.fechaFallecimiento],
     ['fechaNacimiento', p.fechaNacimiento], ['fechaJubilado', p.fechaJubilado],
     ['sexo', p.sexo], ['formaJuridica', p.formaJuridica],
@@ -169,7 +170,8 @@ function aLineasHpm(p) {
     ['condicion_iva_desc', p.condicionIva ? `Condicion IVA: ${p.condicionIva.descripcion}` : ''],
   ];
   p.domicilios.slice(0, 10).forEach((d, i) => {
-    l.push([`direccion${i + 1}`, d.direccion], [`domicilio_localidad${i + 1}`, d.localidad], [`domicilio_tipo${i + 1}`, d.tipo]);
+    l.push([`direccion${i + 1}`, d.direccion], [`domicilio_localidad${i + 1}`, d.localidad], [`domicilio_tipo${i + 1}`, d.tipo],
+      [`domicilio_cp${i + 1}`, d.codPostal]);
   });
   p.telefonos.slice(0, 10).forEach((t, i) => l.push([`telefono${i + 1}`, t]));
   p.emails.slice(0, 10).forEach((e, i) => l.push([`email${i + 1}`, e.direccion], [`email_estado${i + 1}`, e.estado]));
